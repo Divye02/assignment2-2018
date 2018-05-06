@@ -25,25 +25,58 @@ def make_elemwise_add(shape, tgt, tgt_host, func_name, dtype="float32"):
 
 def make_elemwise_mul(shape, tgt, tgt_host, func_name, dtype="float32"):
     """TODO: Your code here"""
+    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    B = tvm.placeholder(shape, dtype=dtype, name="B")
+    C = tvm.compute(A.shape, lambda *i: A(*i) * B(*i))
+
+    s = tvm.create_schedule(C.op)
+    f = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name=func_name)
+    return f
 
 def make_elemwise_add_by_const(shape, const_k, tgt, tgt_host, func_name,
                                dtype="float32"):
     """TODO: Your code here"""
+    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    B = tvm.const(const_k, dtype=dtype)
+    C = tvm.compute(A.shape, lambda *i: A(*i) + B)
+
+    s = tvm.create_schedule(C.op)
+    f = tvm.build(s, [A, C], tgt, target_host=tgt_host, name=func_name)
+    return f
 
 
 def make_elemwise_mul_by_const(shape, const_k, tgt, tgt_host, func_name,
                             dtype="float32"):
     """TODO: Your code here"""
+    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    B = tvm.const(const_k, dtype=dtype)
+    C = tvm.compute(A.shape, lambda *i: A(*i) * B)
+
+    s = tvm.create_schedule(C.op)
+    f = tvm.build(s, [A, C], tgt, target_host=tgt_host, name=func_name)
+    return f
 
 def make_relu(shape, tgt, tgt_host, func_name, dtype="float32"):
     """TODO: Your code here"""
     """Hint: use tvm.max, tvm.const(0, A.dtype)"""
+    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    relu = tvm.compute(A.shape, lambda *i: tvm.max(A(*i), tvm.const(0, A.dtype)))
+
+    s = tvm.create_schedule(relu.op)
+    f = tvm.build(s, [A, relu], tgt, target_host=tgt_host, name=func_name)
+    return f
 
 
 def make_relu_gradient(shape, tgt, tgt_host, func_name, dtype="float32"):
     """TODO: Your code here"""
     """Hint: use tvm.select"""
+    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    output_grad = tvm.placeholder(shape, dtype=dtype, name="rg_output_grad")
+    res = tvm.compute(A.shape, lambda *i: tvm.select(A(*i) <= 0, 0.0, output_grad(*i)))
 
+    s = tvm.create_schedule([res.op])
+    f = tvm.build(s, [A, output_grad, res], tgt, target_host=tgt_host, name=func_name)
+    return f
 
 def make_matrix_mul(shapeA, transposeA, shapeB, transposeB, tgt, tgt_host,
                     func_name, dtype="float32"):
